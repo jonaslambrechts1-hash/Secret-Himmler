@@ -23345,7 +23345,9 @@
         const no = Object.values(votes).filter((v) => v === false).length;
         const passed = yes > no;
         const chancellor = state.players.find((p) => p.id === state.chancellorNomineeId);
-        let logMsg = `Vote: ${yes} for, ${no} against \u2014 the government ${passed ? "is confirmed." : "is rejected."}`;
+        const approvedNames = state.players.filter((p) => votes[p.id] === true).map((p) => p.name);
+        const rejectedNames = state.players.filter((p) => votes[p.id] === false).map((p) => p.name);
+        let logMsg = `Vote: ${yes} for, ${no} against \u2014 the government ${passed ? "is confirmed." : "is rejected."} Approved: ${approvedNames.length ? approvedNames.join(", ") : "no one"}. Rejected: ${rejectedNames.length ? rejectedNames.join(", ") : "no one"}.`;
         if (!passed) {
           const tracker = state.electionTracker + 1;
           if (tracker >= 3) {
@@ -23464,6 +23466,12 @@
       }
       case "RESOLVE_REVEAL": {
         return { ...state, pendingReveal: null };
+      }
+      case "REPLAY": {
+        const freshPlayers = state.players.map((p) => ({ id: p.id, name: p.name }));
+        const fresh = initialGameState(freshPlayers, state.hostId, state.code);
+        fresh.log = [`New round! (Same ${freshPlayers.length} players, roles reshuffled.)`];
+        return fresh;
       }
       case "POWER_CHECK_AFFILIATION": {
         const target = state.players.find((p) => p.id === action.targetId);
@@ -23863,24 +23871,34 @@
     return /* @__PURE__ */ import_react.default.createElement(Frame, null, /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-tag qc-btn-outline qc-btn mb-4 self-start", onClick: onBack }, "\u2190 Back"), /* @__PURE__ */ import_react.default.createElement("h2", { className: "qc-display text-2xl mb-4", style: { color: "var(--gold)" } }, title), /* @__PURE__ */ import_react.default.createElement("input", { className: "qc-input mb-4", placeholder: "Your name", value: nameInput, onChange: (e) => setNameInput(e.target.value) }), error && /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mb-3", style: { color: "#e08787" } }, error), /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn", onClick: onSubmit }, "Create Room"));
   }
   function JoinScreen({ nameInput, setNameInput, joinCodeInput, setJoinCodeInput, onSubmit, error, onBack }) {
-    return /* @__PURE__ */ import_react.default.createElement(Frame, null, /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-tag qc-btn-outline qc-btn mb-4 self-start", onClick: onBack }, "\u2190 Back"), /* @__PURE__ */ import_react.default.createElement("h2", { className: "qc-display text-2xl mb-4", style: { color: "var(--gold)" } }, "Join a Room"), /* @__PURE__ */ import_react.default.createElement(
+    return /* @__PURE__ */ import_react.default.createElement(Frame, null, /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-tag qc-btn-outline qc-btn mb-4 self-start", onClick: onBack }, "\u2190 Back"), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center mb-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-tag qc-seal inline-block mb-2 px-3 py-1" }, "A game of hidden loyalties"), /* @__PURE__ */ import_react.default.createElement("h1", { className: "qc-display text-3xl font-bold", style: { color: "var(--gold)" } }, "Secret Himmler")), /* @__PURE__ */ import_react.default.createElement("h2", { className: "qc-display text-xl mt-4 mb-4 text-center", style: { color: "var(--text-dim)" } }, "Join a Room"), /* @__PURE__ */ import_react.default.createElement(
       "input",
       {
-        className: "qc-input mb-3",
+        className: "qc-input mb-3 text-center qc-display text-xl tracking-widest",
         placeholder: "Room code",
         value: joinCodeInput,
-        onChange: (e) => setJoinCodeInput(e.target.value.toUpperCase())
+        maxLength: 4,
+        autoCapitalize: "characters",
+        autoCorrect: "off",
+        autoComplete: "off",
+        spellCheck: "false",
+        onChange: (e) => setJoinCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
       }
     ), /* @__PURE__ */ import_react.default.createElement("input", { className: "qc-input mb-4", placeholder: "Your name", value: nameInput, onChange: (e) => setNameInput(e.target.value) }), error && /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mb-3", style: { color: "#e08787" } }, error), /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn", onClick: onSubmit }, "Join Room"));
   }
   function TableJoinScreen({ joinCodeInput, setJoinCodeInput, onSubmit, error, onBack }) {
-    return /* @__PURE__ */ import_react.default.createElement(Frame, null, /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-tag qc-btn-outline qc-btn mb-4 self-start", onClick: onBack }, "\u2190 Back"), /* @__PURE__ */ import_react.default.createElement("h2", { className: "qc-display text-2xl mb-2", style: { color: "var(--gold)" } }, "Table Display"), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mb-4", style: { color: "var(--text-dim)" } }, "This screen will just show the board \u2014 policy tracks, president/chancellor, the log. No private info ever appears here, so it's safe to prop up in the middle of the table. Everyone still votes and views their role on their own device."), /* @__PURE__ */ import_react.default.createElement(
+    return /* @__PURE__ */ import_react.default.createElement(Frame, null, /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-tag qc-btn-outline qc-btn mb-4 self-start", onClick: onBack }, "\u2190 Back"), /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center mb-2" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-tag qc-seal inline-block mb-2 px-3 py-1" }, "A game of hidden loyalties"), /* @__PURE__ */ import_react.default.createElement("h1", { className: "qc-display text-3xl font-bold", style: { color: "var(--gold)" } }, "Secret Himmler")), /* @__PURE__ */ import_react.default.createElement("h2", { className: "qc-display text-xl mt-4 mb-2 text-center", style: { color: "var(--text-dim)" } }, "Table Display"), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mb-4", style: { color: "var(--text-dim)" } }, "This screen will just show the board \u2014 policy tracks, president/chancellor, the log. No private info ever appears here, so it's safe to prop up in the middle of the table. Everyone still votes and views their role on their own device."), /* @__PURE__ */ import_react.default.createElement(
       "input",
       {
-        className: "qc-input mb-4",
+        className: "qc-input mb-4 text-center qc-display text-xl tracking-widest",
         placeholder: "Room code",
         value: joinCodeInput,
-        onChange: (e) => setJoinCodeInput(e.target.value.toUpperCase())
+        maxLength: 4,
+        autoCapitalize: "characters",
+        autoCorrect: "off",
+        autoComplete: "off",
+        spellCheck: "false",
+        onChange: (e) => setJoinCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
       }
     ), error && /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mb-3", style: { color: "#e08787" } }, error), /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn", onClick: onSubmit }, "Show Board"));
   }
@@ -23894,7 +23912,10 @@
   }
   function GameScreen({ game, dispatch, myControlledIds, isMultiplayer, isTableDisplay, gateFor, setGateFor }) {
     const passAndPlay = !isMultiplayer && myControlledIds.length > 1;
-    if (game.phase === "gameover") return /* @__PURE__ */ import_react.default.createElement(GameOverScreen, { game, wide: isTableDisplay });
+    if (game.phase === "gameover") {
+      const isHost = !isTableDisplay && game.hostId && myControlledIds.includes(game.hostId);
+      return /* @__PURE__ */ import_react.default.createElement(GameOverScreen, { game, wide: isTableDisplay, isHost, onReplay: () => dispatch({ type: "REPLAY" }) });
+    }
     const pendingPlayerId = getPendingPlayerId(game);
     const myActionId = !isTableDisplay ? getMyActionablePlayerId(game, myControlledIds) : null;
     const isMyPending = !!myActionId;
@@ -23956,11 +23977,13 @@
     })), /* @__PURE__ */ import_react.default.createElement(PowerLegend, { track, big })), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center gap-2 mt-3" }, /* @__PURE__ */ import_react.default.createElement("span", { className: labelCls, style: { color: "var(--text-dim)" } }, "Election tracker:"), [0, 1, 2].map((i) => /* @__PURE__ */ import_react.default.createElement("div", { key: i, className: big ? "w-5 h-5 rounded-full" : "w-3 h-3 rounded-full", style: { background: i < game.electionTracker ? "var(--gold)" : "transparent", border: "1px solid var(--gold)" } }))), /* @__PURE__ */ import_react.default.createElement("div", { className: `flex flex-wrap ${big ? "gap-2.5 mt-5" : "gap-1.5 mt-3"}` }, game.players.map((p) => {
       const isPres = game.players[game.presidentIndex].id === p.id;
       const isChan = game.chancellorNomineeId === p.id;
+      const vote = game.votes[p.id];
+      const voteMark = vote === true ? " \u2713" : vote === false ? " \u2717" : "";
       return /* @__PURE__ */ import_react.default.createElement("span", { key: p.id, className: tagCls, style: {
         background: !p.alive ? "var(--ink2)" : isPres ? "var(--gold)" : isChan ? "var(--reform)" : "var(--ink2)",
         color: !p.alive ? "var(--text-dim)" : isPres ? "var(--ink)" : "var(--text)",
         textDecoration: p.alive ? "none" : "line-through"
-      } }, p.name, isPres ? " \xB7 Pres" : "", isChan ? " \xB7 Chan" : "");
+      } }, p.name, isPres ? " \xB7 Pres" : "", isChan ? " \xB7 Chan" : "", /* @__PURE__ */ import_react.default.createElement("b", { style: { color: vote === true ? "var(--reform)" : vote === false ? "var(--syndicate)" : "inherit" } }, voteMark));
     })));
   }
   function powerIcon(power) {
@@ -24112,9 +24135,9 @@
   function RevealCard({ reveal, onDismiss }) {
     return /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-fade-in flex-1 flex flex-col items-center justify-center text-center gap-4" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-card qc-stamp p-6 w-full" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs uppercase tracking-widest", style: { color: "var(--text-dim)" } }, reveal.title), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-lg mt-2" }, reveal.body), /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn mt-4 w-full", onClick: onDismiss }, "Hide & Continue")));
   }
-  function GameOverScreen({ game, wide }) {
+  function GameOverScreen({ game, wide, isHost, onReplay }) {
     const win = game.winner;
-    return /* @__PURE__ */ import_react.default.createElement(Frame, { wide }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex-1 flex flex-col items-center justify-center text-center gap-4 qc-fade-in" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "qc-tag qc-seal px-3 py-1" }, "Game Over"), /* @__PURE__ */ import_react.default.createElement("h2", { className: wide ? "qc-display text-5xl" : "qc-display text-3xl", style: { color: win.team === "reform" ? "var(--reform)" : "var(--syndicate)" } }, win.team === "reform" ? "The Liberals Win" : "The Fascists Win"), /* @__PURE__ */ import_react.default.createElement("p", { className: wide ? "text-lg" : "text-sm", style: { color: "var(--text-dim)" } }, win.reason), /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-card p-4 w-full text-left mt-4" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "qc-display text-xs mb-2", style: { color: "var(--text-dim)" } }, "Final Roles"), game.players.map((p) => /* @__PURE__ */ import_react.default.createElement("p", { key: p.id, className: wide ? "text-lg" : "text-sm" }, p.name, " \u2014 ", /* @__PURE__ */ import_react.default.createElement("b", null, ROLE_LABEL[p.role]), !p.alive ? " (executed)" : "")))));
+    return /* @__PURE__ */ import_react.default.createElement(Frame, { wide }, /* @__PURE__ */ import_react.default.createElement("div", { className: "flex-1 flex flex-col items-center justify-center text-center gap-4 qc-fade-in" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "qc-tag qc-seal px-3 py-1" }, "Game Over"), /* @__PURE__ */ import_react.default.createElement("h2", { className: wide ? "qc-display text-5xl" : "qc-display text-3xl", style: { color: win.team === "reform" ? "var(--reform)" : "var(--syndicate)" } }, win.team === "reform" ? "The Liberals Win" : "The Fascists Win"), /* @__PURE__ */ import_react.default.createElement("p", { className: wide ? "text-lg" : "text-sm", style: { color: "var(--text-dim)" } }, win.reason), /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-card p-4 w-full text-left mt-4" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "qc-display text-xs mb-2", style: { color: "var(--text-dim)" } }, "Final Roles"), game.players.map((p) => /* @__PURE__ */ import_react.default.createElement("p", { key: p.id, className: wide ? "text-lg" : "text-sm" }, p.name, " \u2014 ", /* @__PURE__ */ import_react.default.createElement("b", null, ROLE_LABEL[p.role]), !p.alive ? " (executed)" : ""))), isHost ? /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn w-full mt-2", onClick: onReplay }, "Play Again \u2014 Same Group") : /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mt-2", style: { color: "var(--text-dim)" } }, "Waiting for the host to start a new round\u2026")));
   }
 
   // entry-with-storage.jsx

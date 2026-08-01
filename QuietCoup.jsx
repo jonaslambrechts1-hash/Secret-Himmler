@@ -2457,7 +2457,11 @@ function reduce(state, action){
       const no = Object.values(votes).filter(v=>v===false).length;
       const passed = yes > no;
       const chancellor = state.players.find(p=>p.id===state.chancellorNomineeId);
-      let logMsg = `Vote: ${yes} for, ${no} against — the government ${passed ? 'is confirmed.' : 'is rejected.'}`;
+      const approvedNames = state.players.filter(p=>votes[p.id]===true).map(p=>p.name);
+      const rejectedNames = state.players.filter(p=>votes[p.id]===false).map(p=>p.name);
+      let logMsg = `Vote: ${yes} for, ${no} against — the government ${passed ? 'is confirmed.' : 'is rejected.'} `
+        + `Approved: ${approvedNames.length ? approvedNames.join(', ') : 'no one'}. `
+        + `Rejected: ${rejectedNames.length ? rejectedNames.join(', ') : 'no one'}.`;
       if(!passed){
         const tracker = state.electionTracker+1;
         if(tracker>=3){
@@ -2528,6 +2532,12 @@ function reduce(state, action){
     }
     case 'RESOLVE_REVEAL': {
       return {...state, pendingReveal:null};
+    }
+    case 'REPLAY': {
+      const freshPlayers = state.players.map(p => ({id: p.id, name: p.name}));
+      const fresh = initialGameState(freshPlayers, state.hostId, state.code);
+      fresh.log = [`New round! (Same ${freshPlayers.length} players, roles reshuffled.)`];
+      return fresh;
     }
     case 'POWER_CHECK_AFFILIATION': {
       const target = state.players.find(p=>p.id===action.targetId);
@@ -2836,9 +2846,14 @@ function NameEntryScreen({title, nameInput, setNameInput, onSubmit, error, onBac
 function JoinScreen({nameInput, setNameInput, joinCodeInput, setJoinCodeInput, onSubmit, error, onBack}){
   return <Frame>
     <button className="qc-tag qc-btn-outline qc-btn mb-4 self-start" onClick={onBack}>← Back</button>
-    <h2 className="qc-display text-2xl mb-4" style={{color:'var(--gold)'}}>Join a Room</h2>
-    <input className="qc-input mb-3" placeholder="Room code" value={joinCodeInput}
-      onChange={e=>setJoinCodeInput(e.target.value.toUpperCase())} />
+    <div className="text-center mb-2">
+      <div className="qc-tag qc-seal inline-block mb-2 px-3 py-1">A game of hidden loyalties</div>
+      <h1 className="qc-display text-3xl font-bold" style={{color:'var(--gold)'}}>Secret Himmler</h1>
+    </div>
+    <h2 className="qc-display text-xl mt-4 mb-4 text-center" style={{color:'var(--text-dim)'}}>Join a Room</h2>
+    <input className="qc-input mb-3 text-center qc-display text-xl tracking-widest" placeholder="Room code" value={joinCodeInput}
+      maxLength={4} autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck="false"
+      onChange={e=>setJoinCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''))} />
     <input className="qc-input mb-4" placeholder="Your name" value={nameInput} onChange={e=>setNameInput(e.target.value)} />
     {error && <p className="text-sm mb-3" style={{color:'#e08787'}}>{error}</p>}
     <button className="qc-btn" onClick={onSubmit}>Join Room</button>
@@ -2848,10 +2863,15 @@ function JoinScreen({nameInput, setNameInput, joinCodeInput, setJoinCodeInput, o
 function TableJoinScreen({joinCodeInput, setJoinCodeInput, onSubmit, error, onBack}){
   return <Frame>
     <button className="qc-tag qc-btn-outline qc-btn mb-4 self-start" onClick={onBack}>← Back</button>
-    <h2 className="qc-display text-2xl mb-2" style={{color:'var(--gold)'}}>Table Display</h2>
+    <div className="text-center mb-2">
+      <div className="qc-tag qc-seal inline-block mb-2 px-3 py-1">A game of hidden loyalties</div>
+      <h1 className="qc-display text-3xl font-bold" style={{color:'var(--gold)'}}>Secret Himmler</h1>
+    </div>
+    <h2 className="qc-display text-xl mt-4 mb-2 text-center" style={{color:'var(--text-dim)'}}>Table Display</h2>
     <p className="text-sm mb-4" style={{color:'var(--text-dim)'}}>This screen will just show the board — policy tracks, president/chancellor, the log. No private info ever appears here, so it's safe to prop up in the middle of the table. Everyone still votes and views their role on their own device.</p>
-    <input className="qc-input mb-4" placeholder="Room code" value={joinCodeInput}
-      onChange={e=>setJoinCodeInput(e.target.value.toUpperCase())} />
+    <input className="qc-input mb-4 text-center qc-display text-xl tracking-widest" placeholder="Room code" value={joinCodeInput}
+      maxLength={4} autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck="false"
+      onChange={e=>setJoinCodeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''))} />
     {error && <p className="text-sm mb-3" style={{color:'#e08787'}}>{error}</p>}
     <button className="qc-btn" onClick={onSubmit}>Show Board</button>
   </Frame>;
@@ -2889,7 +2909,10 @@ function LobbyWaitScreen({game, roomCode, isHost, isTableDisplay, onStart}){
 function GameScreen({game, dispatch, myControlledIds, isMultiplayer, isTableDisplay, gateFor, setGateFor}){
   const passAndPlay = !isMultiplayer && myControlledIds.length>1;
 
-  if(game.phase==='gameover') return <GameOverScreen game={game} wide={isTableDisplay} />;
+  if(game.phase==='gameover'){
+    const isHost = !isTableDisplay && game.hostId && myControlledIds.includes(game.hostId);
+    return <GameOverScreen game={game} wide={isTableDisplay} isHost={isHost} onReplay={()=>dispatch({type:'REPLAY'})} />;
+  }
 
   // The player-facing "whose turn" for informational text (waiting panel).
   const pendingPlayerId = getPendingPlayerId(game);
@@ -3006,11 +3029,13 @@ function Board({game, big}){
       {game.players.map(p=>{
         const isPres = game.players[game.presidentIndex].id===p.id;
         const isChan = game.chancellorNomineeId===p.id;
+        const vote = game.votes[p.id];
+        const voteMark = vote===true ? ' ✓' : vote===false ? ' ✗' : '';
         return <span key={p.id} className={tagCls} style={{
           background: !p.alive ? 'var(--ink2)' : (isPres ? 'var(--gold)' : isChan ? 'var(--reform)' : 'var(--ink2)'),
           color: !p.alive ? 'var(--text-dim)' : (isPres ? 'var(--ink)' : 'var(--text)'),
           textDecoration: p.alive ? 'none' : 'line-through',
-        }}>{p.name}{isPres ? ' · Pres' : ''}{isChan ? ' · Chan' : ''}</span>;
+        }}>{p.name}{isPres ? ' · Pres' : ''}{isChan ? ' · Chan' : ''}<b style={{color: vote===true ? 'var(--reform)' : vote===false ? 'var(--syndicate)' : 'inherit'}}>{voteMark}</b></span>;
       })}
     </div>
   </div>;
@@ -3244,7 +3269,7 @@ function RevealCard({reveal, onDismiss}){
   </div>;
 }
 
-function GameOverScreen({game, wide}){
+function GameOverScreen({game, wide, isHost, onReplay}){
   const win = game.winner;
   return <Frame wide={wide}>
     <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 qc-fade-in">
@@ -3259,6 +3284,11 @@ function GameOverScreen({game, wide}){
           <p key={p.id} className={wide ? "text-lg" : "text-sm"}>{p.name} — <b>{ROLE_LABEL[p.role]}</b>{!p.alive ? ' (executed)' : ''}</p>
         ))}
       </div>
+      {isHost ? (
+        <button className="qc-btn w-full mt-2" onClick={onReplay}>Play Again — Same Group</button>
+      ) : (
+        <p className="text-sm mt-2" style={{color:'var(--text-dim)'}}>Waiting for the host to start a new round…</p>
+      )}
     </div>
   </Frame>;
 }
