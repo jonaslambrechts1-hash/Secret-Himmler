@@ -2610,6 +2610,17 @@ export default function QuietCoup(){
   const [gateFor, setGateFor] = useState(null);
   const revRef = useRef(0);
 
+  useEffect(()=>{
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const join = params.get('join');
+      if(join){
+        setJoinCodeInput(join.toUpperCase());
+        setMode('setup-join');
+      }
+    } catch(e){ /* no URL access, ignore */ }
+  }, []);
+
   useEffect(()=>{ if(game) revRef.current = game.rev || 0; }, [game]);
 
   const dispatch = useCallback((action) => {
@@ -2810,14 +2821,18 @@ function TableJoinScreen({joinCodeInput, setJoinCodeInput, onSubmit, error, onBa
 }
 
 function LobbyWaitScreen({game, roomCode, isHost, isTableDisplay, onStart}){
+  let joinValue = roomCode;
+  try {
+    joinValue = `${window.location.origin}${window.location.pathname}?join=${roomCode}`;
+  } catch(e) { /* fall back to plain code if no URL access */ }
   return <Frame wide={isTableDisplay}>
     <div className="text-center mb-6">
       <p className="text-xs uppercase tracking-widest mb-1" style={{color:'var(--text-dim)'}}>Room Code</p>
       <p className={isTableDisplay ? "qc-display text-6xl" : "qc-display text-4xl"} style={{color:'var(--gold)'}}>{roomCode}</p>
       <div className="flex justify-center mt-3">
-        <QRCodeSVG value={roomCode} size={isTableDisplay ? 220 : 160} />
+        <QRCodeSVG value={joinValue} size={isTableDisplay ? 220 : 160} />
       </div>
-      <p className="text-xs mt-2" style={{color:'var(--text-dim)'}}>Scan to grab the code, then type it into "Join a room" — or just read it off out loud.</p>
+      <p className="text-xs mt-2" style={{color:'var(--text-dim)'}}>Scan to open the game with the code already filled in — or just read the code out loud.</p>
     </div>
     <div className="flex flex-col gap-2 mb-6">
       {game.players.map(p=>(

@@ -2,46 +2,38 @@ SECRET HIMMLER — als echte website (gratis, geen Claude, geen download)
 ========================================================================
 
 Dit zet je spel om in een gewone website met een eigen link
-(bv. secret-himmler.glitch.me). Iedereen opent die link gewoon in hun
+(bv. secret-himmler.onrender.com). Iedereen opent die link gewoon in hun
 telefoon-browser — Android, iPhone, maakt niet uit. Niemand hoeft iets
 te installeren, ook Claude niet.
 
 Je hoeft dit maar ÉÉN keer te doen. Daarna blijft de link werken.
 
-OPTIE A — Glitch (makkelijkst, alles via de browser, geen account met
-creditcard nodig)
+RENDER.COM (gratis, vereist een GitHub-account — geen creditcard nodig)
 ------------------------------------------------------------------------
-1. Ga naar https://glitch.com en maak een gratis account (mag met Google/
-   GitHub-login).
-2. Klik "New Project" → "Import from GitHub" bestaat ook, maar makkelijker:
-   kies "New Project" → "glitch-hello-node" (een lege Node-app).
-3. In de bestandenlijst links zie je server.js, package.json, etc. al
-   staan van het sjabloon — vervang de inhoud van ELK bestand door de
-   bijbehorende inhoud uit deze map (server.js, index.html, package.json,
-   bundle.js, storage-polyfill.js, QuietCoup.jsx, entry-with-storage.jsx).
-   Bestanden die nog niet bestaan in het sjabloon maak je aan via de
-   "New File" knop (let op de exacte bestandsnaam, incl. hoofdletters).
-4. Glitch start de app automatisch. Bovenin zie je "Show" → "In a New
-   Window" — dat is je publieke link (iets als
-   https://jouw-projectnaam.glitch.me).
-5. Klik rechtsboven op "Share" om de link te kopiëren. Stuur die naar
-   iedereen die meespeelt.
-
-OPTIE B — Render.com (ook gratis, iets stabieler, wel een GitHub-account
-nodig)
-------------------------------------------------------------------------
-1. Zet deze map (server.js, package.json, index.html, bundle.js,
-   storage-polyfill.js, QuietCoup.jsx, entry-with-storage.jsx) in een
-   nieuwe GitHub-repository (via github.com, "Upload files" — geen git-
-   kennis nodig, gewoon slepen).
-2. Ga naar https://render.com, maak een gratis account, klik
-   "New +" → "Web Service", en kies die GitHub-repository.
-3. Laat "Build Command" leeg en zet "Start Command" op: node server.js
-4. Klik "Create Web Service". Na een paar minuten krijg je een link als
+1. Ga naar https://github.com en maak een gratis account als je die nog
+   niet hebt.
+2. Maak een nieuwe (lege) repository aan, bv. "secret-himmler".
+3. Klik "Add file" → "Upload files" en sleep ALLE bestanden uit deze map
+   erin: server.js, package.json, index.html, bundle.js,
+   storage-polyfill.js, QuietCoup.jsx, entry-with-storage.jsx. Klik
+   "Commit changes".
+4. Ga naar https://render.com, maak een gratis account (kan met je
+   GitHub-login), klik "New +" → "Web Service", en kies je nieuwe
+   repository.
+5. Laat "Build Command" leeg en zet "Start Command" op: node server.js
+6. Kies het gratis plan ("Hobby / Free") en klik "Create Web Service".
+7. Na een paar minuten krijg je een link als
    https://secret-himmler.onrender.com — dat is je publieke website.
+   Stuur die naar iedereen die meespeelt.
 
 BELANGRIJK OM TE WETEN
 ------------------------------------------------------------------------
+- Gratis hosting-diensten veranderen vaak van voorwaarden (of verdwijnen
+  zelfs helemaal, zoals Glitch in 2025 deed). Kijk dus even op
+  render.com/pricing of het gratis plan er nog is voor je begint. Werkt
+  Render niet meer? Zoek dan naar een alternatief zoals Railway.app of
+  Fly.io — de stappen zijn vergelijkbaar (GitHub-repo koppelen, start-
+  commando "node server.js" instellen).
 - Gratis hosting "slaapt" na een tijdje zonder bezoek en wordt wakker
   zodra iemand de link opent (kan een paar seconden duren de eerste keer).
 - Actieve spelstatus wordt bewaard in een bestandje op de server, dus een

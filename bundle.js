@@ -29,9 +29,9 @@
     mod
   ));
 
-  // ../../node_modules/react/cjs/react.development.js
+  // ../node_modules/react/cjs/react.development.js
   var require_react_development = __commonJS({
-    "../../node_modules/react/cjs/react.development.js"(exports, module) {
+    "../node_modules/react/cjs/react.development.js"(exports, module) {
       "use strict";
       (function() {
         function defineDeprecationWarning(methodName, info) {
@@ -1001,9 +1001,9 @@
     }
   });
 
-  // ../../node_modules/react/index.js
+  // ../node_modules/react/index.js
   var require_react = __commonJS({
-    "../../node_modules/react/index.js"(exports, module) {
+    "../node_modules/react/index.js"(exports, module) {
       "use strict";
       if (false) {
         module.exports = null;
@@ -1013,9 +1013,9 @@
     }
   });
 
-  // ../../node_modules/scheduler/cjs/scheduler.development.js
+  // ../node_modules/scheduler/cjs/scheduler.development.js
   var require_scheduler_development = __commonJS({
-    "../../node_modules/scheduler/cjs/scheduler.development.js"(exports) {
+    "../node_modules/scheduler/cjs/scheduler.development.js"(exports) {
       "use strict";
       (function() {
         function performWorkUntilDeadline() {
@@ -1272,9 +1272,9 @@
     }
   });
 
-  // ../../node_modules/scheduler/index.js
+  // ../node_modules/scheduler/index.js
   var require_scheduler = __commonJS({
-    "../../node_modules/scheduler/index.js"(exports, module) {
+    "../node_modules/scheduler/index.js"(exports, module) {
       "use strict";
       if (false) {
         module.exports = null;
@@ -1284,9 +1284,9 @@
     }
   });
 
-  // ../../node_modules/react-dom/cjs/react-dom.development.js
+  // ../node_modules/react-dom/cjs/react-dom.development.js
   var require_react_dom_development = __commonJS({
-    "../../node_modules/react-dom/cjs/react-dom.development.js"(exports) {
+    "../node_modules/react-dom/cjs/react-dom.development.js"(exports) {
       "use strict";
       (function() {
         function noop() {
@@ -1528,9 +1528,9 @@
     }
   });
 
-  // ../../node_modules/react-dom/index.js
+  // ../node_modules/react-dom/index.js
   var require_react_dom = __commonJS({
-    "../../node_modules/react-dom/index.js"(exports, module) {
+    "../node_modules/react-dom/index.js"(exports, module) {
       "use strict";
       if (false) {
         checkDCE();
@@ -1541,9 +1541,9 @@
     }
   });
 
-  // ../../node_modules/react-dom/cjs/react-dom-client.development.js
+  // ../node_modules/react-dom/cjs/react-dom-client.development.js
   var require_react_dom_client_development = __commonJS({
-    "../../node_modules/react-dom/cjs/react-dom-client.development.js"(exports) {
+    "../node_modules/react-dom/cjs/react-dom-client.development.js"(exports) {
       "use strict";
       (function() {
         function findHook(fiber, id) {
@@ -21440,9 +21440,9 @@
     }
   });
 
-  // ../../node_modules/react-dom/client.js
+  // ../node_modules/react-dom/client.js
   var require_client = __commonJS({
-    "../../node_modules/react-dom/client.js"(exports, module) {
+    "../node_modules/react-dom/client.js"(exports, module) {
       "use strict";
       if (false) {
         checkDCE();
@@ -23576,6 +23576,17 @@
     const [gateFor, setGateFor] = (0, import_react.useState)(null);
     const revRef = (0, import_react.useRef)(0);
     (0, import_react.useEffect)(() => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const join = params.get("join");
+        if (join) {
+          setJoinCodeInput(join.toUpperCase());
+          setMode("setup-join");
+        }
+      } catch (e) {
+      }
+    }, []);
+    (0, import_react.useEffect)(() => {
       if (game) revRef.current = game.rev || 0;
     }, [game]);
     const dispatch = (0, import_react.useCallback)((action) => {
@@ -23831,7 +23842,12 @@
     ), error && /* @__PURE__ */ import_react.default.createElement("p", { className: "text-sm mb-3", style: { color: "#e08787" } }, error), /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn", onClick: onSubmit }, "Show Board"));
   }
   function LobbyWaitScreen({ game, roomCode, isHost, isTableDisplay, onStart }) {
-    return /* @__PURE__ */ import_react.default.createElement(Frame, { wide: isTableDisplay }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center mb-6" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs uppercase tracking-widest mb-1", style: { color: "var(--text-dim)" } }, "Room Code"), /* @__PURE__ */ import_react.default.createElement("p", { className: isTableDisplay ? "qc-display text-6xl" : "qc-display text-4xl", style: { color: "var(--gold)" } }, roomCode), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex justify-center mt-3" }, /* @__PURE__ */ import_react.default.createElement(QRCodeSVG, { value: roomCode, size: isTableDisplay ? 220 : 160 })), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs mt-2", style: { color: "var(--text-dim)" } }, 'Scan to grab the code, then type it into "Join a room" \u2014 or just read it off out loud.')), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex flex-col gap-2 mb-6" }, game.players.map((p) => /* @__PURE__ */ import_react.default.createElement("div", { key: p.id, className: `qc-card px-3 py-2 qc-display ${isTableDisplay ? "text-xl" : "text-sm"}` }, p.name))), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs text-center mb-4", style: { color: "var(--text-dim)" } }, game.players.length, " joined \xB7 need at least 5"), isHost ? /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn mt-auto", disabled: game.players.length < 5, onClick: onStart }, game.players.length < 5 ? `Waiting for players (need ${5 - game.players.length} more)` : `Start Game (${game.players.length} players)`) : /* @__PURE__ */ import_react.default.createElement("p", { className: "text-center text-sm mt-auto", style: { color: "var(--text-dim)" } }, "Waiting for the host to start the game\u2026"));
+    let joinValue = roomCode;
+    try {
+      joinValue = `${window.location.origin}${window.location.pathname}?join=${roomCode}`;
+    } catch (e) {
+    }
+    return /* @__PURE__ */ import_react.default.createElement(Frame, { wide: isTableDisplay }, /* @__PURE__ */ import_react.default.createElement("div", { className: "text-center mb-6" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs uppercase tracking-widest mb-1", style: { color: "var(--text-dim)" } }, "Room Code"), /* @__PURE__ */ import_react.default.createElement("p", { className: isTableDisplay ? "qc-display text-6xl" : "qc-display text-4xl", style: { color: "var(--gold)" } }, roomCode), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex justify-center mt-3" }, /* @__PURE__ */ import_react.default.createElement(QRCodeSVG, { value: joinValue, size: isTableDisplay ? 220 : 160 })), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs mt-2", style: { color: "var(--text-dim)" } }, "Scan to open the game with the code already filled in \u2014 or just read the code out loud.")), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex flex-col gap-2 mb-6" }, game.players.map((p) => /* @__PURE__ */ import_react.default.createElement("div", { key: p.id, className: `qc-card px-3 py-2 qc-display ${isTableDisplay ? "text-xl" : "text-sm"}` }, p.name))), /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs text-center mb-4", style: { color: "var(--text-dim)" } }, game.players.length, " joined \xB7 need at least 5"), isHost ? /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn mt-auto", disabled: game.players.length < 5, onClick: onStart }, game.players.length < 5 ? `Waiting for players (need ${5 - game.players.length} more)` : `Start Game (${game.players.length} players)`) : /* @__PURE__ */ import_react.default.createElement("p", { className: "text-center text-sm mt-auto", style: { color: "var(--text-dim)" } }, "Waiting for the host to start the game\u2026"));
   }
   function GameScreen({ game, dispatch, myControlledIds, isMultiplayer, isTableDisplay, gateFor, setGateFor }) {
     const passAndPlay = !isMultiplayer && myControlledIds.length > 1;
