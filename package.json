@@ -1,0 +1,12 @@
+{
+  "name": "secret-himmler",
+  "version": "1.0.0",
+  "description": "Secret Himmler — social deduction party game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
