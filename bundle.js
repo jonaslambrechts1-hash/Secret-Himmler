@@ -23575,28 +23575,79 @@
     const [error, setError] = (0, import_react.useState)("");
     const [gateFor, setGateFor] = (0, import_react.useState)(null);
     const revRef = (0, import_react.useRef)(0);
-    (0, import_react.useEffect)(() => {
+    function setUrlState(params) {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const join = params.get("join");
-        if (join) {
-          setJoinCodeInput(join.toUpperCase());
-          setMode("setup-join");
-        }
+        const url = new URL(window.location.href);
+        url.search = "";
+        Object.entries(params).forEach(([k, v]) => {
+          if (v != null) url.searchParams.set(k, v);
+        });
+        window.history.replaceState({}, "", url);
       } catch (e) {
       }
+    }
+    (0, import_react.useEffect)(() => {
+      (async () => {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const join = params.get("join");
+          const as = params.get("as");
+          const table = params.get("table");
+          if (!join) return;
+          const remote = await loadRemote(join);
+          if (!remote) {
+            setJoinCodeInput(join.toUpperCase());
+            setMode("setup-join");
+            return;
+          }
+          if (table) {
+            setRoomCode(join);
+            setIsMultiplayer(true);
+            setIsTableDisplay(true);
+            setMyControlledIds([]);
+            setGame(remote);
+            setMode(remote.phase === "lobby" ? "lobby-wait" : "game");
+            revRef.current = remote.rev;
+            return;
+          }
+          if (as && remote.players.find((p) => p.id === as)) {
+            setRoomCode(join);
+            setIsMultiplayer(true);
+            setIsTableDisplay(false);
+            setMyControlledIds([as]);
+            setGame(remote);
+            setMode(remote.phase === "lobby" ? "lobby-wait" : "game");
+            revRef.current = remote.rev;
+            return;
+          }
+          setJoinCodeInput(join.toUpperCase());
+          setMode("setup-join");
+        } catch (e) {
+        }
+      })();
     }, []);
     (0, import_react.useEffect)(() => {
       if (game) revRef.current = game.rev || 0;
     }, [game]);
-    const dispatch = (0, import_react.useCallback)((action) => {
-      setGame((prev) => {
-        if (!prev) return prev;
-        const next = reduce(prev, action);
-        next.rev = (prev.rev || 0) + 1;
-        if (isMultiplayer && roomCode) saveRemote(roomCode, next);
-        return next;
-      });
+    const gameRef = (0, import_react.useRef)(null);
+    (0, import_react.useEffect)(() => {
+      gameRef.current = game;
+    }, [game]);
+    const dispatch = (0, import_react.useCallback)(async (action) => {
+      let base = gameRef.current;
+      if (isMultiplayer && roomCode) {
+        const remote = await loadRemote(roomCode);
+        if (remote) base = remote;
+      }
+      if (!base) return;
+      const next = reduce(base, action);
+      next.rev = (base.rev || 0) + 1;
+      gameRef.current = next;
+      revRef.current = next.rev;
+      setGame(next);
+      if (isMultiplayer && roomCode) {
+        await saveRemote(roomCode, next);
+      }
       setGateFor(null);
     }, [isMultiplayer, roomCode]);
     (0, import_react.useEffect)(() => {
@@ -23606,6 +23657,7 @@
         if (remote && remote.rev > revRef.current) {
           revRef.current = remote.rev;
           setGame(remote);
+          if (remote.phase && remote.phase !== "lobby") setMode("game");
         }
       }, 1800);
       return () => clearInterval(iv);
@@ -23649,6 +23701,7 @@
       setGame(lobby);
       setMode("lobby-wait");
       revRef.current = 1;
+      setUrlState({ join: code, as: me.id });
     }
     async function joinRoom() {
       const code = joinCodeInput.trim().toUpperCase();
@@ -23675,6 +23728,7 @@
       setGame(next);
       setMode("lobby-wait");
       revRef.current = next.rev;
+      setUrlState({ join: code, as: me.id });
     }
     async function joinAsTableDisplay() {
       const code = joinCodeInput.trim().toUpperCase();
@@ -23694,6 +23748,7 @@
       setGame(remote);
       setMode(remote.phase === "lobby" ? "lobby-wait" : "game");
       revRef.current = remote.rev;
+      setUrlState({ join: code, table: "1" });
     }
     async function hostStartGame() {
       if (!game || game.players.length < 5) {
@@ -23707,18 +23762,6 @@
       setMode("game");
       revRef.current = g.rev;
     }
-    (0, import_react.useEffect)(() => {
-      if (mode !== "lobby-wait" || !roomCode) return;
-      const iv = setInterval(async () => {
-        const remote = await loadRemote(roomCode);
-        if (remote && remote.rev > revRef.current) {
-          revRef.current = remote.rev;
-          setGame(remote);
-          if (remote.phase && remote.phase !== "lobby") setMode("game");
-        }
-      }, 1500);
-      return () => clearInterval(iv);
-    }, [mode, roomCode]);
     if (!mode) return /* @__PURE__ */ import_react.default.createElement(
       LandingScreen,
       {
@@ -23853,8 +23896,33 @@
     const passAndPlay = !isMultiplayer && myControlledIds.length > 1;
     if (game.phase === "gameover") return /* @__PURE__ */ import_react.default.createElement(GameOverScreen, { game, wide: isTableDisplay });
     const pendingPlayerId = getPendingPlayerId(game);
-    const isMyPending = !isTableDisplay && pendingPlayerId && myControlledIds.includes(pendingPlayerId);
-    return /* @__PURE__ */ import_react.default.createElement(Frame, { wide: isTableDisplay }, /* @__PURE__ */ import_react.default.createElement(Board, { game, big: isTableDisplay }), /* @__PURE__ */ import_react.default.createElement("div", { className: "mt-4 flex-1 flex flex-col" }, isMyPending ? passAndPlay && gateFor !== pendingPlayerId ? /* @__PURE__ */ import_react.default.createElement(PassGate, { player: game.players.find((p) => p.id === pendingPlayerId), onReady: () => setGateFor(pendingPlayerId) }) : /* @__PURE__ */ import_react.default.createElement(PrivateAction, { game, dispatch, playerId: pendingPlayerId, onDone: () => setGateFor(null) }) : /* @__PURE__ */ import_react.default.createElement(WaitingPanel, { game, pendingPlayerId, big: isTableDisplay })), /* @__PURE__ */ import_react.default.createElement(ActivityLog, { log: game.log, big: isTableDisplay }));
+    const myActionId = !isTableDisplay ? getMyActionablePlayerId(game, myControlledIds) : null;
+    const isMyPending = !!myActionId;
+    return /* @__PURE__ */ import_react.default.createElement(Frame, { wide: isTableDisplay }, /* @__PURE__ */ import_react.default.createElement(Board, { game, big: isTableDisplay }), /* @__PURE__ */ import_react.default.createElement("div", { className: "mt-4 flex-1 flex flex-col" }, isMyPending ? passAndPlay && gateFor !== myActionId ? /* @__PURE__ */ import_react.default.createElement(PassGate, { player: game.players.find((p) => p.id === myActionId), onReady: () => setGateFor(myActionId) }) : /* @__PURE__ */ import_react.default.createElement(PrivateAction, { game, dispatch, playerId: myActionId, onDone: () => setGateFor(null) }) : /* @__PURE__ */ import_react.default.createElement(WaitingPanel, { game, pendingPlayerId, big: isTableDisplay })), /* @__PURE__ */ import_react.default.createElement(ActivityLog, { log: game.log, big: isTableDisplay }));
+  }
+  function getMyActionablePlayerId(game, myControlledIds) {
+    if (!myControlledIds || myControlledIds.length === 0) return null;
+    if (game.pendingReveal) return myControlledIds.includes(game.pendingReveal.forPlayerId) ? game.pendingReveal.forPlayerId : null;
+    if (game.phase === "roles") {
+      return myControlledIds.find((id) => {
+        const p = game.players.find((pp) => pp.id === id);
+        return p && !p.roleAcked;
+      }) ?? null;
+    }
+    if (game.phase === "voting") {
+      return myControlledIds.find((id) => {
+        const p = game.players.find((pp) => pp.id === id);
+        return p && p.alive && game.votes[id] === void 0;
+      }) ?? null;
+    }
+    if (game.phase === "nomination" || game.phase === "legislative-president" || game.phase === "veto-president" || game.phase === "executive-power") {
+      const presId = game.players[game.presidentIndex].id;
+      return myControlledIds.includes(presId) ? presId : null;
+    }
+    if (game.phase === "legislative-chancellor") {
+      return myControlledIds.includes(game.chancellorNomineeId) ? game.chancellorNomineeId : null;
+    }
+    return null;
   }
   function getPendingPlayerId(game) {
     if (game.pendingReveal) return game.pendingReveal.forPlayerId;

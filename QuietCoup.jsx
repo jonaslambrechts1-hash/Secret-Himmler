@@ -2610,27 +2610,73 @@ export default function QuietCoup(){
   const [gateFor, setGateFor] = useState(null);
   const revRef = useRef(0);
 
-  useEffect(()=>{
+  function setUrlState(params){
     try {
-      const params = new URLSearchParams(window.location.search);
-      const join = params.get('join');
-      if(join){
+      const url = new URL(window.location.href);
+      url.search = '';
+      Object.entries(params).forEach(([k,v])=>{ if(v!=null) url.searchParams.set(k, v); });
+      window.history.replaceState({}, '', url);
+    } catch(e){ /* no URL access, ignore */ }
+  }
+
+  useEffect(()=>{
+    (async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const join = params.get('join');
+        const as = params.get('as');
+        const table = params.get('table');
+        if(!join) return;
+        const remote = await loadRemote(join);
+        if(!remote){
+          setJoinCodeInput(join.toUpperCase());
+          setMode('setup-join');
+          return;
+        }
+        if(table){
+          setRoomCode(join); setIsMultiplayer(true); setIsTableDisplay(true);
+          setMyControlledIds([]);
+          setGame(remote); setMode(remote.phase==='lobby' ? 'lobby-wait' : 'game');
+          revRef.current = remote.rev;
+          return;
+        }
+        if(as && remote.players.find(p=>p.id===as)){
+          setRoomCode(join); setIsMultiplayer(true); setIsTableDisplay(false);
+          setMyControlledIds([as]);
+          setGame(remote); setMode(remote.phase==='lobby' ? 'lobby-wait' : 'game');
+          revRef.current = remote.rev;
+          return;
+        }
+        // No (valid) saved identity for this room — fall back to the join screen.
         setJoinCodeInput(join.toUpperCase());
         setMode('setup-join');
-      }
-    } catch(e){ /* no URL access, ignore */ }
+      } catch(e){ /* no URL access, ignore */ }
+    })();
   }, []);
 
   useEffect(()=>{ if(game) revRef.current = game.rev || 0; }, [game]);
+  const gameRef = useRef(null);
+  useEffect(()=>{ gameRef.current = game; }, [game]);
 
-  const dispatch = useCallback((action) => {
-    setGame(prev => {
-      if(!prev) return prev;
-      const next = reduce(prev, action);
-      next.rev = (prev.rev||0) + 1;
-      if(isMultiplayer && roomCode) saveRemote(roomCode, next);
-      return next;
-    });
+  const dispatch = useCallback(async (action) => {
+    let base = gameRef.current;
+    if(isMultiplayer && roomCode){
+      // Always act on the freshest possible state, not a locally-cached copy
+      // that might be up to one poll-interval stale — this closes almost all
+      // of the window where two players acting at once could clobber each
+      // other's update.
+      const remote = await loadRemote(roomCode);
+      if(remote) base = remote;
+    }
+    if(!base) return;
+    const next = reduce(base, action);
+    next.rev = (base.rev||0) + 1;
+    gameRef.current = next;
+    revRef.current = next.rev;
+    setGame(next);
+    if(isMultiplayer && roomCode){
+      await saveRemote(roomCode, next);
+    }
     setGateFor(null);
   }, [isMultiplayer, roomCode]);
 
@@ -2641,6 +2687,7 @@ export default function QuietCoup(){
       if(remote && remote.rev > revRef.current){
         revRef.current = remote.rev;
         setGame(remote);
+        if(remote.phase && remote.phase!=='lobby') setMode('game');
       }
     }, 1800);
     return ()=>clearInterval(iv);
@@ -2671,6 +2718,7 @@ export default function QuietCoup(){
     setMyControlledIds([me.id]);
     setGame(lobby); setMode('lobby-wait');
     revRef.current = 1;
+    setUrlState({join: code, as: me.id});
   }
   async function joinRoom(){
     const code = joinCodeInput.trim().toUpperCase();
@@ -2685,6 +2733,7 @@ export default function QuietCoup(){
     setMyControlledIds([me.id]);
     setGame(next); setMode('lobby-wait');
     revRef.current = next.rev;
+    setUrlState({join: code, as: me.id});
   }
   async function joinAsTableDisplay(){
     const code = joinCodeInput.trim().toUpperCase();
@@ -2695,6 +2744,7 @@ export default function QuietCoup(){
     setMyControlledIds([]);
     setGame(remote); setMode(remote.phase==='lobby' ? 'lobby-wait' : 'game');
     revRef.current = remote.rev;
+    setUrlState({join: code, table: '1'});
   }
   async function hostStartGame(){
     if(!game || game.players.length<5){ setError('Need at least 5 players.'); return; }
@@ -2704,19 +2754,6 @@ export default function QuietCoup(){
     setGame(g); setMode('game');
     revRef.current = g.rev;
   }
-
-  useEffect(()=>{
-    if(mode!=='lobby-wait' || !roomCode) return;
-    const iv = setInterval(async ()=>{
-      const remote = await loadRemote(roomCode);
-      if(remote && remote.rev > revRef.current){
-        revRef.current = remote.rev;
-        setGame(remote);
-        if(remote.phase && remote.phase!=='lobby') setMode('game');
-      }
-    }, 1500);
-    return ()=>clearInterval(iv);
-  }, [mode, roomCode]);
 
   if(!mode) return <LandingScreen onLocal={startLocalSetup} onCreate={()=>setMode('setup-create')}
       onJoin={()=>setMode('setup-join')} onTable={()=>setMode('setup-table')} />;
@@ -2854,17 +2891,23 @@ function GameScreen({game, dispatch, myControlledIds, isMultiplayer, isTableDisp
 
   if(game.phase==='gameover') return <GameOverScreen game={game} wide={isTableDisplay} />;
 
+  // The player-facing "whose turn" for informational text (waiting panel).
   const pendingPlayerId = getPendingPlayerId(game);
-  const isMyPending = !isTableDisplay && pendingPlayerId && myControlledIds.includes(pendingPlayerId);
+  // The specific one of MY OWN controlled players who can act right now.
+  // For roles/voting this lets every device act independently and simultaneously;
+  // for pass-and-play (multiple controlled ids on one device) it still cycles
+  // through them one at a time so people don't see each other's private info.
+  const myActionId = !isTableDisplay ? getMyActionablePlayerId(game, myControlledIds) : null;
+  const isMyPending = !!myActionId;
 
   return <Frame wide={isTableDisplay}>
     <Board game={game} big={isTableDisplay} />
     <div className="mt-4 flex-1 flex flex-col">
       {isMyPending ? (
-        passAndPlay && gateFor!==pendingPlayerId ? (
-          <PassGate player={game.players.find(p=>p.id===pendingPlayerId)} onReady={()=>setGateFor(pendingPlayerId)} />
+        passAndPlay && gateFor!==myActionId ? (
+          <PassGate player={game.players.find(p=>p.id===myActionId)} onReady={()=>setGateFor(myActionId)} />
         ) : (
-          <PrivateAction game={game} dispatch={dispatch} playerId={pendingPlayerId} onDone={()=>setGateFor(null)} />
+          <PrivateAction game={game} dispatch={dispatch} playerId={myActionId} onDone={()=>setGateFor(null)} />
         )
       ) : (
         <WaitingPanel game={game} pendingPlayerId={pendingPlayerId} big={isTableDisplay} />
@@ -2874,6 +2917,33 @@ function GameScreen({game, dispatch, myControlledIds, isMultiplayer, isTableDisp
   </Frame>;
 }
 
+// Which of MY OWN controlled player ids should act right now, if any.
+function getMyActionablePlayerId(game, myControlledIds){
+  if(!myControlledIds || myControlledIds.length===0) return null;
+  if(game.pendingReveal) return myControlledIds.includes(game.pendingReveal.forPlayerId) ? game.pendingReveal.forPlayerId : null;
+  if(game.phase==='roles'){
+    return myControlledIds.find(id => {
+      const p = game.players.find(pp=>pp.id===id);
+      return p && !p.roleAcked;
+    }) ?? null;
+  }
+  if(game.phase==='voting'){
+    return myControlledIds.find(id => {
+      const p = game.players.find(pp=>pp.id===id);
+      return p && p.alive && game.votes[id]===undefined;
+    }) ?? null;
+  }
+  if(game.phase==='nomination' || game.phase==='legislative-president' || game.phase==='veto-president' || game.phase==='executive-power'){
+    const presId = game.players[game.presidentIndex].id;
+    return myControlledIds.includes(presId) ? presId : null;
+  }
+  if(game.phase==='legislative-chancellor'){
+    return myControlledIds.includes(game.chancellorNomineeId) ? game.chancellorNomineeId : null;
+  }
+  return null;
+}
+
+// Informational-only: who the group is currently waiting on (for the waiting panel text).
 function getPendingPlayerId(game){
   if(game.pendingReveal) return game.pendingReveal.forPlayerId;
   if(game.phase==='roles'){
