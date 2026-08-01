@@ -2994,6 +2994,7 @@ function Board({game, big}){
           </div>;
         })}
       </div>
+      <PowerLegend track={track} big={big} />
     </div>
     <div className="flex items-center gap-2 mt-3">
       <span className={labelCls} style={{color:'var(--text-dim)'}}>Election tracker:</span>
@@ -3016,6 +3017,44 @@ function Board({game, big}){
 }
 function powerIcon(power){
   return {check:'👁', snap:'⚡', preview:'🔎', resign:'✕'}[power] || '';
+}
+
+const POWER_EXPLAIN = {
+  check: 'President secretly checks one player’s party membership.',
+  snap: 'President immediately names the next Presidential candidate.',
+  preview: 'President secretly peeks at the top 3 policies in the deck.',
+  resign: 'President executes a player — if it’s Hitler, Liberals win instantly.',
+};
+
+function PowerLegend({track, big}){
+  const seen = new Set();
+  const items = track
+    .map((power, i) => ({ power, position: i+1 }))
+    .filter(({power}) => power && !seen.has(power) && seen.add(power));
+  if(items.length===0 && true){
+    // still show veto note even with no other powers unlocked yet
+  }
+  const textCls = big ? "text-base" : "text-xs";
+  const iconCls = big ? "text-2xl" : "text-base";
+  return <div className={`mt-3 flex flex-col ${big ? 'gap-2.5' : 'gap-1.5'}`}>
+    {items.map(({power, position}) => (
+      <div key={power} className="flex items-start gap-2">
+        <span className={iconCls} style={{lineHeight:1}}>{powerIcon(power)}</span>
+        <span className={textCls} style={{color:'var(--text-dim)'}}>
+          <b style={{color:'var(--gold)'}}>{ordinal(position)} fascist policy</b> — {POWER_EXPLAIN[power]}
+        </span>
+      </div>
+    ))}
+    <div className="flex items-start gap-2">
+      <span className={iconCls} style={{lineHeight:1}}>🤝</span>
+      <span className={textCls} style={{color:'var(--text-dim)'}}>
+        <b style={{color:'var(--gold)'}}>From the 5th fascist policy onward</b> — the Chancellor may request a veto; if the President agrees, that agenda is discarded and no policy is enacted.
+      </span>
+    </div>
+  </div>;
+}
+function ordinal(n){
+  return {1:'1st',2:'2nd',3:'3rd',4:'4th',5:'5th'}[n] || `${n}th`;
 }
 
 function PassGate({player, onReady}){

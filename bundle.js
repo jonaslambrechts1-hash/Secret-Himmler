@@ -23953,7 +23953,7 @@
       const filled = i < game.syndicateCount;
       const power = i < 5 ? track[i] : null;
       return /* @__PURE__ */ import_react.default.createElement("div", { key: i, className: `${slotCls} ${filled ? "qc-slot-syndicate" : power ? "qc-slot-power" : "qc-slot-empty"}` }, !filled && power ? powerIcon(power) : "");
-    }))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center gap-2 mt-3" }, /* @__PURE__ */ import_react.default.createElement("span", { className: labelCls, style: { color: "var(--text-dim)" } }, "Election tracker:"), [0, 1, 2].map((i) => /* @__PURE__ */ import_react.default.createElement("div", { key: i, className: big ? "w-5 h-5 rounded-full" : "w-3 h-3 rounded-full", style: { background: i < game.electionTracker ? "var(--gold)" : "transparent", border: "1px solid var(--gold)" } }))), /* @__PURE__ */ import_react.default.createElement("div", { className: `flex flex-wrap ${big ? "gap-2.5 mt-5" : "gap-1.5 mt-3"}` }, game.players.map((p) => {
+    })), /* @__PURE__ */ import_react.default.createElement(PowerLegend, { track, big })), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-center gap-2 mt-3" }, /* @__PURE__ */ import_react.default.createElement("span", { className: labelCls, style: { color: "var(--text-dim)" } }, "Election tracker:"), [0, 1, 2].map((i) => /* @__PURE__ */ import_react.default.createElement("div", { key: i, className: big ? "w-5 h-5 rounded-full" : "w-3 h-3 rounded-full", style: { background: i < game.electionTracker ? "var(--gold)" : "transparent", border: "1px solid var(--gold)" } }))), /* @__PURE__ */ import_react.default.createElement("div", { className: `flex flex-wrap ${big ? "gap-2.5 mt-5" : "gap-1.5 mt-3"}` }, game.players.map((p) => {
       const isPres = game.players[game.presidentIndex].id === p.id;
       const isChan = game.chancellorNomineeId === p.id;
       return /* @__PURE__ */ import_react.default.createElement("span", { key: p.id, className: tagCls, style: {
@@ -23965,6 +23965,24 @@
   }
   function powerIcon(power) {
     return { check: "\u{1F441}", snap: "\u26A1", preview: "\u{1F50E}", resign: "\u2715" }[power] || "";
+  }
+  var POWER_EXPLAIN = {
+    check: "President secretly checks one player\u2019s party membership.",
+    snap: "President immediately names the next Presidential candidate.",
+    preview: "President secretly peeks at the top 3 policies in the deck.",
+    resign: "President executes a player \u2014 if it\u2019s Hitler, Liberals win instantly."
+  };
+  function PowerLegend({ track, big }) {
+    const seen = /* @__PURE__ */ new Set();
+    const items = track.map((power, i) => ({ power, position: i + 1 })).filter(({ power }) => power && !seen.has(power) && seen.add(power));
+    if (items.length === 0 && true) {
+    }
+    const textCls = big ? "text-base" : "text-xs";
+    const iconCls = big ? "text-2xl" : "text-base";
+    return /* @__PURE__ */ import_react.default.createElement("div", { className: `mt-3 flex flex-col ${big ? "gap-2.5" : "gap-1.5"}` }, items.map(({ power, position }) => /* @__PURE__ */ import_react.default.createElement("div", { key: power, className: "flex items-start gap-2" }, /* @__PURE__ */ import_react.default.createElement("span", { className: iconCls, style: { lineHeight: 1 } }, powerIcon(power)), /* @__PURE__ */ import_react.default.createElement("span", { className: textCls, style: { color: "var(--text-dim)" } }, /* @__PURE__ */ import_react.default.createElement("b", { style: { color: "var(--gold)" } }, ordinal(position), " fascist policy"), " \u2014 ", POWER_EXPLAIN[power]))), /* @__PURE__ */ import_react.default.createElement("div", { className: "flex items-start gap-2" }, /* @__PURE__ */ import_react.default.createElement("span", { className: iconCls, style: { lineHeight: 1 } }, "\u{1F91D}"), /* @__PURE__ */ import_react.default.createElement("span", { className: textCls, style: { color: "var(--text-dim)" } }, /* @__PURE__ */ import_react.default.createElement("b", { style: { color: "var(--gold)" } }, "From the 5th fascist policy onward"), " \u2014 the Chancellor may request a veto; if the President agrees, that agenda is discarded and no policy is enacted.")));
+  }
+  function ordinal(n) {
+    return { 1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th" }[n] || `${n}th`;
   }
   function PassGate({ player, onReady }) {
     return /* @__PURE__ */ import_react.default.createElement("div", { className: "qc-fade-in flex-1 flex flex-col items-center justify-center text-center gap-4" }, /* @__PURE__ */ import_react.default.createElement("p", { className: "text-xs uppercase tracking-widest", style: { color: "var(--text-dim)" } }, "Pass the device to"), /* @__PURE__ */ import_react.default.createElement("p", { className: "qc-display text-3xl", style: { color: "var(--gold)" } }, player.name), /* @__PURE__ */ import_react.default.createElement("button", { className: "qc-btn", onClick: onReady }, "I'm ", player.name, " \u2014 Show Me"));
